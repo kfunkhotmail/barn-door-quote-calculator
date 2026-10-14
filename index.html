@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barn Door Quote Calculator</title>
+<style>
+  :root {
+    --wood: #8b5a2b;
+    --wood-dark: #5d3a17;
+    --cream: #faf6ef;
+    --paper: #ffffff;
+    --ink: #2e2418;
+    --accent: #c47b2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 24px 16px 64px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: var(--wood-dark); margin-bottom: 6px; }
+  header p { color: #6b5a43; font-style: italic; }
+  .card {
+    background: var(--paper);
+    border: 2px solid var(--wood);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.15rem; margin-bottom: 12px; color: var(--wood-dark); }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opts label {
+    border: 2px solid #d8c9ae;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.15s;
+  }
+  .opts input { display: none; }
+  .opts input:checked + span { font-weight: bold; }
+  .opts label:has(input:checked) {
+    border-color: var(--accent);
+    background: #fdf3e3;
+    box-shadow: 0 2px 6px rgba(196,123,42,.25);
+  }
+  #quote {
+    position: sticky;
+    bottom: 16px;
+    background: var(--wood-dark);
+    color: var(--cream);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+  }
+  #quote .range { font-size: 2.2rem; font-weight: bold; margin: 6px 0; }
+  #quote .note { font-size: 0.8rem; opacity: 0.85; font-style: italic; }
+  .breakdown { font-size: 0.85rem; opacity: 0.9; margin-top: 8px; line-height: 1.6; }
+  footer { text-align: center; margin-top: 28px; color: #8a7557; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#x1F6AA; Barn Door Quote Calculator</h1>
+  <p>Custom handmade sliding barn doors — Maple Ridge, BC</p>
+</header>
+
+<div class="card">
+  <h2>1. Door width</h2>
+  <div class="opts" id="width">
+    <label><input type="radio" name="width" value="0" checked><span>Up to 36&quot;</span></label>
+    <label><input type="radio" name="width" value="50"><span>37&ndash;42&quot;</span></label>
+    <label><input type="radio" name="width" value="100"><span>43&ndash;48&quot;</span></label>
+    <label><input type="radio" name="width" value="160"><span>Over 48&quot;</span></label>
+  </div>
+</div>
+
+<div class="card">
+  <h2>2. Style</h2>
+  <div class="opts" id="style">
+    <label><input type="radio" name="style" value="0" checked><span>Solid wood</span></label>
+    <label><input type="radio" name="style" value="100"><span>Glass insert (+$100)</span></label>
+    <label><input type="radio" name="style" value="350"><span>Double doors (+$350)</span></label>
+  </div>
+</div>
+
+<div class="card">
+  <h2>3. Finish</h2>
+  <div class="opts" id="finish">
+    <label><input type="radio" name="finish" value="0" checked><span>Paint or stain</span></label>
+    <label><input type="radio" name="finish" value="60"><span>Custom design (+$60)</span></label>
+  </div>
+</div>
+
+<div class="card">
+  <h2>4. Hardware</h2>
+  <div class="opts" id="hardware">
+    <label><input type="radio" name="hardware" value="0" checked><span>Standard</span></label>
+    <label><input type="radio" name="hardware" value="40"><span>Soft-close (+$40)</span></label>
+  </div>
+</div>
+
+<div class="card">
+  <h2>5. Installation</h2>
+  <div class="opts" id="install">
+    <label><input type="radio" name="install" value="80" checked><span>Yes, install it (+$80)</span></label>
+    <label><input type="radio" name="install" value="0"><span>Pickup only</span></label>
+  </div>
+</div>
+
+<div id="quote">
+  <div>Your estimate</div>
+  <div class="range" id="price">$400&ndash;$480</div>
+  <div class="breakdown" id="breakdown"></div>
+  <div class="note">Estimate only &mdash; final quote confirmed after details are discussed.</div>
+</div>
+
+<footer>
+  Handcrafted to order in any size &amp; design &bull; Maple Ridge, Pitt Meadows, Coquitlam &amp; Greater Vancouver
+</footer>
+
+<script>
+// ============================================================
+//  PRICE TABLE — edit these numbers anytime, the page updates.
+//  All prices are in Canadian dollars.
+// ============================================================
+const BASE_PRICE = 400;      // starting price, solid wood, up to 36"
+const ESTIMATE_SPREAD = 80;  // estimates shown as a range: price .. price + spread
+
+function selectedValue(groupName) {
+  const el = document.querySelector(`input[name="${groupName}"]:checked`);
+  return el ? parseInt(el.value, 10) : 0;
+}
+
+function selectedLabel(groupName) {
+  const el = document.querySelector(`input[name="${groupName}"]:checked`);
+  return el ? el.parentElement.textContent.trim() : '';
+}
+
+function updateQuote() {
+  const parts = [
+    ['Width', selectedValue('width'), selectedLabel('width')],
+    ['Style', selectedValue('style'), selectedLabel('style')],
+    ['Finish', selectedValue('finish'), selectedLabel('finish')],
+    ['Hardware', selectedValue('hardware'), selectedLabel('hardware')],
+    ['Installation', selectedValue('install'), selectedLabel('install')],
+  ];
+  const total = BASE_PRICE + parts.reduce((sum, p) => sum + p[1], 0);
+  document.getElementById('price').textContent =
+    `$${total}\u2013$${total + ESTIMATE_SPREAD}`;
+  document.getElementById('breakdown').innerHTML =
+    parts.map(p => `${p[0]}: ${p[2]}`).join(' &nbsp;&bull;&nbsp; ');
+}
+
+document.querySelectorAll('input[type="radio"]').forEach(el =>
+  el.addEventListener('change', updateQuote)
+);
+updateQuote();
+</script>
+</body>
+</html>
